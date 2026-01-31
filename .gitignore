@@ -1,3 +1,29 @@
-node_modules
+# ─── OS junk ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Node (applies to both root Next.js app and coding-time-tracker/) ───────
+node_modules/
+
+# ─── VS Code extension: compiled output ─────────────────────────────────────
+coding-time-tracker/out/
+
+# ─── VS Code extension: packaged .vsix file ─────────────────────────────────
+*.vsix
 .vscode
-out
+
+# ─── Next.js (root app — will be created later) ────────────────────────────
+.next/
+next-env.d.ts
+
+# ─── Environment & secrets — NEVER commit these ─────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ─── Firebase service account key — even if it ends up here somehow ─────────
+*service-account*.json
+*firebase*.json
+!firebase.json
