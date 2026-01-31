@@ -133,7 +133,7 @@ export class FirebaseManager {
   }
 
   /**
-   * CRITICAL: Write daily data to Firestore
+   * Write daily data to Firestore
    * Uses merge strategy to increment existing data
    */
   async writeDayData(userId: string, data: IDayData): Promise<boolean> {

@@ -24,17 +24,21 @@ export async function getUserId(
  * Get current date in YYYY-MM-DD format
  */
 export function getCurrentDate(): string {
-  return new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**
  * Get language ID from active editor
  */
-export function getCurrentLanguage(): string | null {
+export function getCurrentLanguage(): string {
   const editor = vscode.window.activeTextEditor;
 
   if (!editor) {
-    return null;
+    return "unknown";
   }
 
   return editor.document.languageId;

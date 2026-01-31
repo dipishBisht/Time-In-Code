@@ -1,145 +1,140 @@
-import * as vscode from "vscode";
-import { FirebaseManager } from "./firebase.js";
-import { getUserId } from "./utils.js";
+import * as vscode from 'vscode';
+import { FirebaseManager } from './firebase.js';
+import { Tracker } from './tracker.js';
+import { getUserId } from './utils.js';
 
+// ─────────────────────────────────────────────
+// MODULE-LEVEL STATE
+// These live for the entire lifetime of the extension.
+// ─────────────────────────────────────────────
 let firebaseManager: FirebaseManager;
+let tracker: Tracker | null = null;
+let extensionContext: vscode.ExtensionContext;
 
-/**
- * Called when extension is activated
- */
+// ─────────────────────────────────────────────
+// ACTIVATION
+// ─────────────────────────────────────────────
+
 export async function activate(context: vscode.ExtensionContext) {
-  console.log("[CodingTime] Extension activated!");
+  console.log('[CodingTime] Extension activated.');
 
-  // Initialize Firebase Manager
+  extensionContext = context;
+
+  // ── Step 1: Initialize Firebase ───────────
   firebaseManager = new FirebaseManager(context);
-
-  // Check if configured
   const isConfigured = await firebaseManager.isConfigured();
 
   if (!isConfigured) {
-    // First run - prompt user to configure
-    const result = await vscode.window.showInformationMessage(
-      "Coding Time Tracker needs Firebase configuration to sync your data.",
-      "Configure Now",
-      "Later",
+    // First run — ask user to configure
+    const choice = await vscode.window.showInformationMessage(
+      'Coding Time Tracker needs a Firebase service account to sync data.',
+      'Configure Now',
+      'Later'
     );
 
-    if (result === "Configure Now") {
-      await configureFirebase();
+    if (choice === 'Configure Now') {
+      await runConfigureFlow();
     } else {
       vscode.window.showWarningMessage(
-        'Coding Time Tracker will not sync until configured. Run "Coding Time: Configure Firebase" when ready.',
+        'Tracking is paused. Run "Coding Time: Configure Firebase" when ready.'
       );
     }
   } else {
-    // Initialize with stored config
-    const initialized = await firebaseManager.initialize();
-    if (initialized) {
-      vscode.window.showInformationMessage(
-        "Coding Time Tracker is now tracking!",
-      );
-    }
+    // Already configured — initialize silently
+    await firebaseManager.initialize();
   }
 
-  // Register commands
+  // ── Step 2: Start the Tracker (only if Firebase is ready) ──
+  if (await firebaseManager.isConfigured()) {
+    await startTracker(context);
+  }
+
+  // ── Step 3: Register Commands ─────────────
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "coding-time-tracker.configure",
-      configureFirebase,
+      'coding-time-tracker.configure',
+      () => runConfigureFlow()
     ),
-
-    vscode.commands.registerCommand("coding-time-tracker.showStats", showStats),
-    vscode.commands.registerCommand("coding-time-tracker.testWrite", () =>
-      testFirebaseWrite(context),
-    ),
-    vscode.commands.registerCommand("coding-time-tracker.reset", async () => {
-      await context.secrets.delete("firebase_config");
-      vscode.window.showInformationMessage(
-        "🔥 Coding Time Tracker reset. Reload window to reconfigure.",
-      );
-    }),
-    vscode.commands.registerCommand("coding-time-tracker.testWrite", () =>
-      testFirebaseWrite(context),
-    ),
+    vscode.commands.registerCommand(
+      'coding-time-tracker.showStats',
+      () => showStats(context)
+    )
   );
 
-  // Add Firebase to disposables for cleanup
+  // ── Step 4: Register cleanup ──────────────
   context.subscriptions.push({
-    dispose: () => firebaseManager.dispose(),
+    dispose: () => {
+      if (tracker) {
+        tracker.stop();
+      }
+      firebaseManager.dispose();
+    }
   });
 }
 
+// ─────────────────────────────────────────────
+// DEACTIVATION
+// ─────────────────────────────────────────────
+
+export function deactivate() {
+  console.log('[CodingTime] Extension deactivated.');
+  // Cleanup is handled by the disposable registered above
+}
+
+// ─────────────────────────────────────────────
+// INTERNAL FUNCTIONS
+// ─────────────────────────────────────────────
+
 /**
- * Configure Firebase credentials
+ * Initialize and start the tracker.
  */
-async function configureFirebase(): Promise<void> {
+async function startTracker(context: vscode.ExtensionContext): Promise<void> {
+  const userId = await getUserId(context);
+  tracker = new Tracker(firebaseManager, userId);
+  tracker.start();
+  console.log('[CodingTime] Tracker started.');
+}
+
+/**
+ * Run the Firebase configuration flow.
+ * Prompts user for service account JSON, stores it, then starts tracker.
+ */
+async function runConfigureFlow(): Promise<void> {
   const input = await vscode.window.showInputBox({
-    prompt: "Paste your Firebase service account JSON (entire content)",
-    placeHolder: '{ "type": "service_account", "project_id": "...", ... }',
+    prompt: 'Paste your Firebase service account JSON here',
+    placeHolder: '{ "type": "service_account", ... }',
     ignoreFocusOut: true,
     validateInput: (value) => {
       try {
-        JSON.parse(value);
+        const parsed = JSON.parse(value);
+        if (!parsed.project_id || !parsed.private_key || !parsed.client_email) {
+          return 'Missing required fields: project_id, private_key, client_email';
+        }
         return null; // Valid
       } catch {
-        return "Invalid JSON format";
+        return 'Invalid JSON. Paste the entire contents of your service account file.';
       }
-    },
+    }
   });
 
   if (!input) {
-    return;
+    return; // User cancelled
   }
 
   const success = await firebaseManager.configure(input);
 
-  if (success) {
-    vscode.window.showInformationMessage(
-      "✅ Firebase configured successfully!",
-    );
-  }
-}
-
-/**
- * TEMPORARY: Test Firebase write
- */
-async function testFirebaseWrite(
-  context: vscode.ExtensionContext,
-): Promise<void> {
-  const userId = await getUserId(context);
-
-  const testData = {
-    date: new Date().toISOString().split("T")[0],
-    totalSeconds: 120, // 2 minutes
-    languages: {
-      typescript: 120,
-    },
-  };
-
-  vscode.window.showInformationMessage("Writing test data to Firebase...");
-
-  const success = await firebaseManager.writeDayData(userId, testData);
-
-  if (success) {
-    vscode.window.showInformationMessage(
-      "✅ Test data written! Check Firebase Console.",
-    );
+ if (success) {
+    vscode.window.showInformationMessage('✅ Firebase configured. Starting tracker...');
+    await startTracker(extensionContext);
   } else {
-    vscode.window.showErrorMessage("❌ Failed to write test data.");
+    vscode.window.showErrorMessage('❌ Firebase configuration failed. Check the Debug Console for details.');
   }
 }
 
 /**
- * Show today's stats (OPTIONAL - for debugging)
+ * OPTIONAL: Show today's stats in a simple message box.
+ * Useful for debugging during development.
  */
-async function showStats(context?: vscode.ExtensionContext): Promise<void> {
-  // We'll implement this later - for now just show a message
-  vscode.window.showInformationMessage("Stats command - Coming soon!");
-}
-
-/**
- * Called when extension is deactivated
- */
-export function deactivate() {
-  console.log("[CodingTime] Extension deactivated!");
+async function showStats(context: vscode.ExtensionContext): Promise<void> {
+  vscode.window.showInformationMessage('Stats: check the Debug Console for live tracker output.');
 }
