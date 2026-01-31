@@ -4,6 +4,10 @@
   "description": "Automatically track your daily coding time and sync to Firebase",
   "version": "0.0.1",
   "publisher": "dipishBisht",
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/dipishBisht/Coding-Time-Tracker/"
+},
   "type": "module",
   "engines": {
     "vscode": "^1.108.1"
