@@ -1,12 +1,16 @@
 {
-  "name": "coding-time-tracker",
-  "displayName": "Coding Time Tracker",
+  "name": "time-in-code",
+  "displayName": "Time in Code",
   "description": "Automatically track your daily coding time and sync to Firebase",
   "version": "0.1.0",
-  "publisher": "dipishBisht",
+  "publisher": "DipishBisht",
   "repository": {
     "type": "git",
     "url": "https://github.com/dipishBisht/Coding-Time-Tracker/"
+  },
+  "author": {
+    "name": "Dipish Bisht",
+    "email": "dipish1718@gmail.com"
   },
   "engines": {
     "vscode": "^1.108.1"
