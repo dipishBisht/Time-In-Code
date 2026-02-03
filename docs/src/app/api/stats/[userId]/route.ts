@@ -126,9 +126,6 @@ export async function GET(
       formattedDuration: formatDuration(doc.totalSeconds),
     }));
 
-    console.log("DOC SAMPLE:", trackingDocs[0]);
-    console.log("LANG TYPE:", typeof trackingDocs[0]?.languages);
-
     return NextResponse.json({
       userId,
       userName: user.name,

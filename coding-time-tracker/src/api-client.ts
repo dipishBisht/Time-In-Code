@@ -10,7 +10,7 @@ import axios from "axios";
 const SECRETS_KEY_API_ENDPOINT = "coding_time_tracker_api_endpoint";
 const SECRETS_KEY_USER_TOKEN = "coding_time_tracker_user_token";
 
-export const API_ENDPOINT = "http://localhost:3000/api/";
+export const API_ENDPOINT = "https://coding-time-tracker.vercel.app/api/";
 
 export class ApiClient {
   private context: vscode.ExtensionContext;
