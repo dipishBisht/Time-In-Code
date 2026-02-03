@@ -13,7 +13,7 @@ const IDLE_TIMEOUT_MS = 60 * 1000;
 /** How often the heartbeat fires to check for idle. */
 const HEARTBEAT_INTERVAL_MS = 1 * 1000;
 
-/** How often we flush accumulated time to Firestore. */
+/** How often we flush accumulated time to DB. */
 const SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
 /**

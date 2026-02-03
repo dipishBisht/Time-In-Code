@@ -44,8 +44,14 @@ export async function activate(
   }
 
   // ── 2. Start the tracker, if configured ──
-  if (await apiClient.isConfigured()) {
+  const ready = await apiClient.initialize();
+
+  if (ready) {
     await startTracker();
+  } else {
+    vscode.window.showInformationMessage(
+      'Coding Time is not configured yet. Run "Coding Time: Configure API" to start tracking.',
+    );
   }
 
   // ── 3: Register Commands ─────────────
