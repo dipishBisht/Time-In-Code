@@ -4,6 +4,31 @@ A VS Code extension that automatically tracks how long you code each day and syn
 
 ---
 
+
+## First Time Here? Start Here!
+
+**Complete setup in 3 steps (2 minutes total):**
+
+### Step 1: Install the Extension  
+
+### Step 2: Generate Your Token
+  1. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
+  2. Type: **"Coding Time: Configure API"**
+  3. Click **"Generate New Token"**
+
+### Step 3: Start Coding
+Open any file and type. That's it! The extension tracks automatically.
+
+**View your stats:**
+1. Press `Ctrl+Shift+P` again
+2. Type: **"Coding Time: Show Today's Stats"**
+3. Copy your User ID from the message
+4. Visit: `https://time-in-code.vercel.app/dashboard/YOUR_USER_ID`
+
+**Need help?** → [Troubleshooting](#troubleshooting) | [Full Documentation](https://your-api.vercel.app/docs)
+
+---
+
 ## Features
 
 **Automatic tracking** — Starts when you type, pauses after 60s of idle  
@@ -103,10 +128,10 @@ API merges your data into MongoDB
 
 ### What Does NOT Get Tracked
 
-- ❌ File names or paths
-- ❌ Code content
-- ❌ Project names
-- ❌ Personal information
+- File names or paths
+- Code content
+- Project names
+- Personal information
 
 ---
 
