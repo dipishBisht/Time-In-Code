@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongoose';
-import Tracking from '@/models/Tracking';
-import User from '@/models/User';
+import { NextRequest, NextResponse } from "next/server";
+import connectToDatabase from "@/lib/mongoose";
+import Tracking from "@/models/Tracking";
+import User from "@/models/User";
 
 /**
  * GET /api/dashboard/:userId
- * 
+ *
  * Query params:
  *   - days (optional): Number of days to analyze (default: 30, max: 365)
- * 
+ *
  * Returns comprehensive dashboard statistics including:
  * - Total hours and days tracked
  * - Daily trend data (for line charts)
@@ -19,30 +19,30 @@ import User from '@/models/User';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
 
-    // Validate userId 
-    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+    // Validate userId
+    if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Invalid userId parameter' },
-        { status: 400 }
+        { error: "Invalid userId parameter" },
+        { status: 400 },
       );
     }
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const daysParam = searchParams.get('days');
-    
+    const daysParam = searchParams.get("days");
+
     let days = 30; // default
     if (daysParam) {
       const parsed = parseInt(daysParam, 10);
       if (isNaN(parsed) || parsed < 1) {
         return NextResponse.json(
-          { error: 'days must be a positive number' },
-          { status: 400 }
+          { error: "days must be a positive number" },
+          { status: 400 },
         );
       }
       days = Math.min(parsed, 365); // Cap at 365
@@ -52,14 +52,15 @@ export async function GET(
     await connectToDatabase();
 
     // Fetch user profile
-    const user = await User.findOne({ userId }).select('name email createdAt');
+    const user = await User.findOne({ userId }).select("name email createdAt");
 
     if (!user) {
       // User hasn't synced any data yet
       return NextResponse.json({
         userId,
         hasData: false,
-        message: 'No tracking data found for this user. Start coding with the extension installed!',
+        message:
+          "No tracking data found for this user. Start coding with the extension installed!",
       });
     }
 
@@ -74,9 +75,9 @@ export async function GET(
     // Fetch tracking data
     const trackingData = await Tracking.find({
       userId,
-      date: { $gte: startDateStr, $lte: endDateStr }
+      date: { $gte: startDateStr, $lte: endDateStr },
     })
-      .sort({ date: 1 })  // Oldest first for chronological charts
+      .sort({ date: 1 }) // Oldest first for chronological charts
       .lean();
 
     // If no data in range
@@ -90,14 +91,17 @@ export async function GET(
     }
 
     // Calculate overview statistics
-    const totalSeconds = trackingData.reduce((sum, day) => sum + day.totalSeconds, 0);
+    const totalSeconds = trackingData.reduce(
+      (sum, day) => sum + day.totalSeconds,
+      0,
+    );
     const totalHours = Math.floor(totalSeconds / 3600);
     const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
     const totalDays = trackingData.length;
     const averageSecondsPerDay = Math.round(totalSeconds / totalDays);
 
     // Build daily trend chart data
-    const dailyTrend = trackingData.map(day => ({
+    const dailyTrend = trackingData.map((day) => ({
       date: day.date,
       hours: parseFloat((day.totalSeconds / 3600).toFixed(2)),
       seconds: day.totalSeconds,
@@ -105,10 +109,13 @@ export async function GET(
 
     // Calculate language breakdown
     const languageTotals = new Map<string, number>();
-    
-    trackingData.forEach(day => {
+
+    trackingData.forEach((day) => {
       for (const [lang, seconds] of Object.entries(day.languages)) {
-        languageTotals.set(lang, (languageTotals.get(lang) || 0) + (seconds as number));
+        languageTotals.set(
+          lang,
+          (languageTotals.get(lang) || 0) + (seconds as number),
+        );
       }
     });
 
@@ -126,15 +133,16 @@ export async function GET(
     const recentActivity = trackingData
       .slice(-7) // Last 7 entries
       .reverse() // Newest first
-      .map(day => {
-        const topLanguage = Object.entries(day.languages)
-          .sort(([, a], [, b]) => (b as number) - (a as number))[0];
+      .map((day) => {
+        const topLanguage = Object.entries(day.languages).sort(
+          ([, a], [, b]) => (b as number) - (a as number),
+        )[0];
 
         return {
           date: day.date,
           totalSeconds: day.totalSeconds,
           formattedTime: formatDuration(day.totalSeconds),
-          topLanguage: topLanguage ? topLanguage[0] : 'unknown',
+          topLanguage: topLanguage ? topLanguage[0] : "unknown",
           languageCount: Object.keys(day.languages).length,
         };
       });
@@ -143,9 +151,10 @@ export async function GET(
     const { currentStreak, longestStreak } = calculateStreaks(trackingData);
 
     // Find peak coding day
-    const peakDay = trackingData.reduce((max, day) => 
-      day.totalSeconds > max.totalSeconds ? day : max
-    , trackingData[0]);
+    const peakDay = trackingData.reduce(
+      (max, day) => (day.totalSeconds > max.totalSeconds ? day : max),
+      trackingData[0],
+    );
 
     // Calculate milestones
     const milestones = calculateMilestones(totalHours, totalDays);
@@ -160,7 +169,7 @@ export async function GET(
       userEmail: user.email || null,
       joinDate: user.createdAt ? formatDate(new Date(user.createdAt)) : null,
       hasData: true,
-      
+
       // Overview stats
       overview: {
         totalHours,
@@ -168,14 +177,16 @@ export async function GET(
         totalSeconds,
         totalDays,
         averageSecondsPerDay,
-        averageHoursPerDay: parseFloat((averageSecondsPerDay / 3600).toFixed(2)),
+        averageHoursPerDay: parseFloat(
+          (averageSecondsPerDay / 3600).toFixed(2),
+        ),
         formattedTotal: `${totalHours}h ${totalMinutes}m`,
         formattedAverage: formatDuration(averageSecondsPerDay),
       },
 
       // Chart data
       charts: {
-        dailyTrend,  // For line chart
+        dailyTrend, // For line chart
         languageBreakdown, // For pie/bar chart
         dayOfWeekPattern, // For heatmap/bar chart
       },
@@ -202,12 +213,11 @@ export async function GET(
         days,
       },
     });
-
   } catch (error) {
-    console.error('[API] Dashboard endpoint error:', error);
+    console.error("[API] Dashboard endpoint error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -219,8 +229,8 @@ export async function GET(
  */
 function formatDate(date: Date): string {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -237,13 +247,16 @@ function formatDuration(totalSeconds: number): string {
   if (minutes > 0) parts.push(`${minutes}m`);
   if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
 
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 /**
  * Calculate current and longest coding streaks
  */
-function calculateStreaks(trackingData: any[]): { currentStreak: number; longestStreak: number } {
+function calculateStreaks(trackingData: any[]): {
+  currentStreak: number;
+  longestStreak: number;
+} {
   if (trackingData.length === 0) {
     return { currentStreak: 0, longestStreak: 0 };
   }
@@ -253,14 +266,14 @@ function calculateStreaks(trackingData: any[]): { currentStreak: number; longest
   let tempStreak = 1;
 
   // Sort by date to ensure chronological order
-  const sorted = [...trackingData].sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
+  const sorted = [...trackingData].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
 
   for (let i = 1; i < sorted.length; i++) {
     const prevDate = new Date(sorted[i - 1].date);
     const currDate = new Date(sorted[i].date);
-    
+
     // Calculate day difference
     const diffTime = currDate.getTime() - prevDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -281,7 +294,7 @@ function calculateStreaks(trackingData: any[]): { currentStreak: number; longest
   const today = new Date();
   const lastTrackedDate = new Date(sorted[sorted.length - 1].date);
   const daysSinceLastTrack = Math.floor(
-    (today.getTime() - lastTrackedDate.getTime()) / (1000 * 60 * 60 * 24)
+    (today.getTime() - lastTrackedDate.getTime()) / (1000 * 60 * 60 * 24),
   );
 
   if (daysSinceLastTrack <= 1) {
@@ -298,7 +311,10 @@ function calculateStreaks(trackingData: any[]): { currentStreak: number; longest
 /**
  * Calculate milestone achievements based on total hours and days
  */
-function calculateMilestones(totalHours: number, totalDays: number): Array<{
+function calculateMilestones(
+  totalHours: number,
+  totalDays: number,
+): Array<{
   title: string;
   achieved: boolean;
   progress?: number;
@@ -306,37 +322,37 @@ function calculateMilestones(totalHours: number, totalDays: number): Array<{
 }> {
   const milestones = [
     {
-      title: 'First Hour',
+      title: "First Hour",
       achieved: totalHours >= 1,
       progress: totalHours >= 1 ? 1 : totalHours,
       target: 1,
     },
     {
-      title: '10 Hours Coded',
+      title: "10 Hours Coded",
       achieved: totalHours >= 10,
       progress: Math.min(totalHours, 10),
       target: 10,
     },
     {
-      title: '100 Hours Coded',
+      title: "100 Hours Coded",
       achieved: totalHours >= 100,
       progress: Math.min(totalHours, 100),
       target: 100,
     },
     {
-      title: '1000 Hours Coded',
+      title: "1000 Hours Coded",
       achieved: totalHours >= 1000,
       progress: Math.min(totalHours, 1000),
       target: 1000,
     },
     {
-      title: '7-Day Streak',
+      title: "7-Day Streak",
       achieved: totalDays >= 7,
       progress: Math.min(totalDays, 7),
       target: 7,
     },
     {
-      title: '30-Day Streak',
+      title: "30-Day Streak",
       achieved: totalDays >= 30,
       progress: Math.min(totalDays, 30),
       target: 30,
@@ -356,7 +372,15 @@ function calculateDayOfWeekPattern(trackingData: any[]): Array<{
   averageHours: number;
   totalDays: number;
 }> {
-  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const daysOfWeek = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const dayTotals = new Map<number, { total: number; count: number }>();
 
   // Initialize all days
@@ -365,10 +389,10 @@ function calculateDayOfWeekPattern(trackingData: any[]): Array<{
   }
 
   // Aggregate by day of week
-  trackingData.forEach(day => {
+  trackingData.forEach((day) => {
     const date = new Date(day.date);
     const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-    
+
     const current = dayTotals.get(dayOfWeek)!;
     dayTotals.set(dayOfWeek, {
       total: current.total + day.totalSeconds,
@@ -377,11 +401,14 @@ function calculateDayOfWeekPattern(trackingData: any[]): Array<{
   });
 
   // Calculate averages
-  return Array.from(dayTotals.entries()).map(([dayNumber, { total, count }]) => ({
-    day: daysOfWeek[dayNumber],
-    dayNumber,
-    averageSeconds: count > 0 ? Math.round(total / count) : 0,
-    averageHours: count > 0 ? parseFloat((total / count / 3600).toFixed(2)) : 0,
-    totalDays: count,
-  }));
+  return Array.from(dayTotals.entries()).map(
+    ([dayNumber, { total, count }]) => ({
+      day: daysOfWeek[dayNumber],
+      dayNumber,
+      averageSeconds: count > 0 ? Math.round(total / count) : 0,
+      averageHours:
+        count > 0 ? parseFloat((total / count / 3600).toFixed(2)) : 0,
+      totalDays: count,
+    }),
+  );
 }
