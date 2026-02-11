@@ -122,7 +122,9 @@ export class ApiClient {
       );
 
       if (!response.data) {
-        throw new Error(`API returned ${response.status}: ${response.data.message}`);
+        throw new Error(
+          `API returned ${response.status}: ${response.data.message}`,
+        );
       }
 
       console.log(

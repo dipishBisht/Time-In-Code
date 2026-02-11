@@ -1,7 +1,8 @@
 {
   "name": "time-in-code",
   "displayName": "Time in Code",
-  "description": "Automatically track your daily coding time and sync to Firebase",
+  "description": "Automatically track your daily coding time and sync to DB",
+  "icon": "images/logo.png",
   "version": "0.1.2",
   "publisher": "DipishBisht",
   "repository": {
@@ -28,14 +29,14 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-   "commands": [
+    "commands": [
       {
         "command": "coding-time-tracker.configure",
         "title": "Coding Time: Configure API"
       },
       {
         "command": "coding-time-tracker.showStats",
-        "title": "Coding Time: Show Today's Stats"
+        "title": "Coding Time: Show Stats"
       },
       {
         "command": "coding-time-tracker.showToken",

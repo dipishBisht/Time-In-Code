@@ -1,4 +1,5 @@
 import { Timer } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 const footerLinks = {
@@ -21,19 +22,24 @@ const footerLinks = {
 
 export default function Footer() {
   return (
-    <footer className="border-t bg-card">
-      <div className="container py-16">
+    <footer className="border- bg-card">
+      <div className="container py-16 mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link
               href="/"
-              className="flex items-center gap-2.5 font-bold text-lg mb-4"
+              className="flex items-center gap-2.5 font-bold text-lg"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Timer className="h-4 w-4 text-primary-foreground" />
+              <div className="flex relative h-12 w-12 items-center justify-center rounded-lg bg-primary">
+                <Image
+                  src="/images/logo.png"
+                  alt="logo"
+                  fill
+                  className="w-full h-full"
+                />
               </div>
-              <span>CodingTime</span>
+              <span>Time in Code</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Lightweight VS Code extension that tracks your coding time
@@ -72,9 +78,9 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="border-t mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} CodingTime. Built with React, MongoDB &
+            © {new Date().getFullYear()} Time in Code. Built with Next, MongoDB &
             VS Code API.
           </p>
         </div>

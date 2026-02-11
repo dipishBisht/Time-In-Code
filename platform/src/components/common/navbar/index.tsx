@@ -1,10 +1,11 @@
-'use client';
+"use client";
 import { useState } from "react";
 import { Menu, X, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 const navLinks = [
   { label: "Docs", to: "/docs/quick-start" },
@@ -17,13 +18,13 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
-      <div className="container flex h-16 items-center justify-between">
+    <header className="fixed w-full top-0 z-50 bg-transparent backdrop-blur-lg">
+      <div className="container mx-auto flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 font-bold text-lg">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Timer className="h-4 w-4 text-primary-foreground" />
+          <div className="flex relative h-12 w-12 items-center justify-center rounded-lg bg-primary">
+            <Image src="/images/logo.png" alt="logo" fill className="w-full h-full" />
           </div>
-          <span>CodingTime</span>
+          <span>Time in Code</span>
         </Link>
 
         {/* Desktop nav */}

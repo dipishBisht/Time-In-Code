@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { API_ENDPOINT, ApiClient } from "./api-client";
 import { Tracker } from "./tracker";
-import { getUserId, getCurrentDate } from "./utils";
+import { getUserId } from "./utils";
 
 /**
  * MODULE-LEVEL STATE
@@ -167,16 +167,9 @@ async function showStats(): Promise<void> {
   }
 
   const userId = await getUserId(extensionContext);
-  const today = getCurrentDate();
-  const token = await apiClient.getUserToken();
-
-  vscode.window.showInformationMessage(
-    `User ID: ${userId}\n` +
-      `Today: ${today}\n` +
-      `Token: ${token}\n\n` +
-      `View your stats at:\n` +
-      `${API_ENDPOINT}/stats/${userId}`,
-  );
+  const statsUrl = `${API_ENDPOINT.slice(0, -4)}/dashboard/${userId}`;
+  vscode.window.showInformationMessage("Opening your coding dashboard...");
+  vscode.env.openExternal(vscode.Uri.parse(statsUrl));
 }
 
 /**

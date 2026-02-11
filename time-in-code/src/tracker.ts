@@ -210,12 +210,12 @@ export class Tracker {
       return;
     }
 
-    console.log(
-      `[Tracker] Syncing ${this.todayData.totalSeconds}s.`,
+    console.log(`[Tracker] Syncing ${this.todayData.totalSeconds}s.`);
+
+    const success = await this.apiClient.writeDayData(
+      this.userId,
+      this.todayData,
     );
-
-    const success = await this.apiClient.writeDayData(this.userId, this.todayData);
-
 
     if (success) {
       // Reset accumulator after successful write, Only reset on success. If write

@@ -1,24 +1,15 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { docsNav } from "@/utils/data";
 import { ChevronRight } from "lucide-react";
-
-const docsNav = [
-  { label: "Quick Start", to: "/docs/quick-start" },
-  { label: "Installation", to: "/docs/installation" },
-  { label: "Authentication", to: "/docs/authentication" },
-  { label: "Viewing Stats", to: "/docs/viewing-stats" },
-  { label: "API Reference", to: "/docs/api-reference" },
-  { label: "Embedding", to: "/docs/embedding" },
-  { label: "Troubleshooting", to: "/docs/troubleshooting" },
-];
 
 export function DocsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1 container">
+    <div className="pt-28 min-h-screen flex flex-col">
+      <div className="flex-1 mx-auto container">
         <div className="flex gap-10 py-10">
           {/* Sidebar */}
           <aside className="hidden lg:block w-56 shrink-0">

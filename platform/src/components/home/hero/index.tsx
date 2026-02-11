@@ -11,7 +11,7 @@ export default function Hero() {
       <div className="absolute inset-0 hero-gradient" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 rounded-full bg-primary/5 blur-3xl" />
 
-      <div className="container relative py-24 md:py-32 lg:py-40">
+      <div className="container mx-auto relative py-24 md:py-32 lg:py-40">
         <div className="max-w-3xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -86,7 +86,7 @@ export default function Hero() {
                 <div className="w-3 h-3 rounded-full bg-primary/40" />
               </div>
               <span className="text-xs text-muted-foreground ml-2 font-mono">
-                main.ts — CodingTime
+                main.ts — TimeInCode
               </span>
             </div>
             {/* Code lines */}
