@@ -4,32 +4,22 @@ import Tracking, { ITracking } from "@/models/Tracking";
 import User from "@/models/User";
 import { withCors } from "@/lib/cors";
 
-/**
- * GET /api/dashboard/:userId
- *
- * Query params:
- *   - days (optional): Number of days to analyze (default: 30, max: 365)
- *
- * Returns comprehensive dashboard statistics including:
- * - Total hours and days tracked
- * - Daily trend data (for line charts)
- * - Language breakdown (for pie/bar charts)
- * - Recent activity table
- * - Streaks and milestones
- * - Peak coding times
- */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> },
+  { params }: { params: Promise<{ githubId: string }> },
 ) {
   try {
-    const { userId } = await params;
+    const { githubId } = await params;
 
-    // Validate userId
-    if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
+    // Validate githubId
+    if (
+      !githubId ||
+      typeof githubId !== "string" ||
+      githubId.trim().length === 0
+    ) {
       return withCors(
         NextResponse.json(
-          { error: "Invalid userId parameter" },
+          { error: "Invalid githubId parameter" },
           { status: 400 },
         ),
       );
@@ -39,7 +29,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const daysParam = searchParams.get("days");
 
-    let days = 30; // default
+    let days = 30;
     if (daysParam) {
       const parsed = parseInt(daysParam, 10);
       if (isNaN(parsed) || parsed < 1) {
@@ -50,52 +40,50 @@ export async function GET(
           ),
         );
       }
-      days = Math.min(parsed, 365); // Cap at 365
+      days = Math.min(parsed, 365);
     }
 
     // Connect to database
     await connectToDatabase();
 
-    // Fetch user profile
-    const user = await User.findOne({ userId }).select("name email createdAt");
+    // Fetch user profile by githubId
+    const user = await User.findOne({ githubId }).select(
+      "githubUsername avatarUrl createdAt",
+    );
 
     if (!user) {
-      // User hasn't synced any data yet
       return withCors(
         NextResponse.json({
-          userId,
+          githubId,
           hasData: false,
-          message:
-            "No tracking data found for this user. Start coding with the extension installed!",
+          message: "No tracking data found for this user.",
         }),
       );
     }
 
     // Calculate date range
     const now = new Date();
-
     const endDateStr = now.toISOString().slice(0, 10);
 
     const start = new Date(now);
     start.setUTCDate(start.getUTCDate() - days);
     const startDateStr = start.toISOString().slice(0, 10);
 
-    // Fetch tracking data
+    // Fetch tracking data by githubId
     const trackingData = await Tracking.find({
-      userId,
+      githubId,
       date: { $gte: startDateStr, $lte: endDateStr },
     })
-      .sort({ date: 1 }) // Oldest first for chronological charts
+      .sort({ date: 1 })
       .lean();
 
-    // If no data in range
     if (trackingData.length === 0) {
       return withCors(
         NextResponse.json({
-          userId,
-          userName: user.name,
+          githubId,
+          userName: user.githubUsername,
           hasData: false,
-          message: `No coding activity in the last ${days} days. Keep coding!`,
+          message: `No coding activity in the last ${days} days.`,
         }),
       );
     }
@@ -129,7 +117,6 @@ export async function GET(
       }
     });
 
-    // Convert to sorted array
     const languageBreakdown = Array.from(languageTotals.entries())
       .map(([language, seconds]) => ({
         language,
@@ -137,12 +124,12 @@ export async function GET(
         hours: parseFloat((seconds / 3600).toFixed(2)),
         percentage: parseFloat(((seconds / totalSeconds) * 100).toFixed(1)),
       }))
-      .sort((a, b) => b.seconds - a.seconds); // Sort by time (most used first)
+      .sort((a, b) => b.seconds - a.seconds);
 
-    // Recent activity (last 7 days)
+    // Recent activity
     const recentActivity = trackingData
-      .slice(-7) // Last 7 entries
-      .reverse() // Newest first
+      .slice(-7)
+      .reverse()
       .map((day) => {
         const topLanguage = Object.entries(day.languages).sort(
           ([, a], [, b]) => (b as number) - (a as number),
@@ -176,16 +163,14 @@ export async function GET(
     // Calculate day-of-week pattern
     const dayOfWeekPattern = calculateDayOfWeekPattern(trackingData);
 
-    // Build comprehensive response
     return withCors(
       NextResponse.json({
-        userId,
-        userName: user.name || null,
-        userEmail: user.email || null,
+        githubId,
+        userName: user.githubUsername || null,
+        avatarUrl: user.avatarUrl || null,
         joinDate: user.createdAt ? formatDate(new Date(user.createdAt)) : null,
         hasData: true,
 
-        // Overview stats
         overview: {
           totalHours,
           totalMinutes,
@@ -199,17 +184,14 @@ export async function GET(
           formattedAverage: formatDuration(averageSecondsPerDay),
         },
 
-        // Chart data
         charts: {
-          dailyTrend, // For line chart
-          languageBreakdown, // For pie/bar chart
-          dayOfWeekPattern, // For heatmap/bar chart
+          dailyTrend,
+          languageBreakdown,
+          dayOfWeekPattern,
         },
 
-        // Recent activity
         recentActivity,
 
-        // Achievements
         achievements: {
           currentStreak,
           longestStreak,
@@ -221,7 +203,6 @@ export async function GET(
           milestones,
         },
 
-        // Meta
         dateRange: {
           start: startDateStr,
           end: endDateStr,
@@ -230,18 +211,14 @@ export async function GET(
       }),
     );
   } catch (error) {
-    console.error("[API] Dashboard endpoint error:", error);
+    console.error("[API]: Dashboard endpoint error:", error);
     return withCors(
       NextResponse.json({ error: "Internal server error" }, { status: 500 }),
     );
   }
 }
 
-// ─── Helper Functions ────────────────────────────────────────────────────────
-
-/**
- * Format a Date object to YYYY-MM-DD string
- */
+// Helper Functions
 function formatDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -249,9 +226,6 @@ function formatDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-/**
- * Format seconds into human-readable duration
- */
 function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -265,22 +239,17 @@ function formatDuration(totalSeconds: number): string {
   return parts.join(" ");
 }
 
-/**
- * Calculate current and longest coding streaks
- */
 function calculateStreaks(trackingData: ITracking[]) {
   if (!trackingData.length) {
     return { currentStreak: 0, longestStreak: 0 };
   }
 
-  // Sort ascending
   const sorted = [...trackingData].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
 
   const dates = sorted.map((d) => d.date);
 
-  // ---------- longest streak ----------
   let longest = 1;
   let run = 1;
 
@@ -298,7 +267,6 @@ function calculateStreaks(trackingData: ITracking[]) {
     }
   }
 
-  // ---------- current streak ----------
   let current = 0;
   let cursor = new Date().toISOString().slice(0, 10);
 
@@ -306,7 +274,6 @@ function calculateStreaks(trackingData: ITracking[]) {
 
   while (dateSet.has(cursor)) {
     current++;
-
     const d = new Date(cursor);
     d.setUTCDate(d.getUTCDate() - 1);
     cursor = d.toISOString().slice(0, 10);
@@ -318,9 +285,6 @@ function calculateStreaks(trackingData: ITracking[]) {
   };
 }
 
-/**
- * Calculate milestone achievements based on total hours and days
- */
 function calculateMilestones(
   totalHours: number,
   totalDays: number,
@@ -331,7 +295,7 @@ function calculateMilestones(
   progress?: number;
   target?: number;
 }> {
-  const milestones = [
+  return [
     {
       title: "First Hour",
       achieved: totalHours >= 1,
@@ -369,13 +333,8 @@ function calculateMilestones(
       target: 30,
     },
   ];
-
-  return milestones;
 }
 
-/**
- * Calculate average coding time per day of the week
- */
 function calculateDayOfWeekPattern(trackingData: ITracking[]): Array<{
   day: string;
   dayNumber: number;
@@ -394,15 +353,13 @@ function calculateDayOfWeekPattern(trackingData: ITracking[]): Array<{
   ];
   const dayTotals = new Map<number, { total: number; count: number }>();
 
-  // Initialize all days
   for (let i = 0; i < 7; i++) {
     dayTotals.set(i, { total: 0, count: 0 });
   }
 
-  // Aggregate by day of week
   trackingData.forEach((day) => {
     const date = new Date(day.date);
-    const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+    const dayOfWeek = date.getDay();
 
     const current = dayTotals.get(dayOfWeek)!;
     dayTotals.set(dayOfWeek, {
@@ -411,7 +368,6 @@ function calculateDayOfWeekPattern(trackingData: ITracking[]): Array<{
     });
   });
 
-  // Calculate averages
   return Array.from(dayTotals.entries()).map(
     ([dayNumber, { total, count }]) => ({
       day: daysOfWeek[dayNumber],

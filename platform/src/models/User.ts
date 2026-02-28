@@ -1,51 +1,40 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
+import mongoose, { Schema, Model, Document } from "mongoose";
 
 export interface IUser extends Document {
-  userId: string;
+  githubId: string;
+  githubUsername: string;
+  avatarUrl: string;
   token: string;
-  email?: string;
-  name?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>(
   {
-    userId: {
+    githubId: {
       type: String,
-      required: [true, 'User ID is required'],
+      required: true,
       unique: true,
-      trim: true,
       index: true,
+    },
+    githubUsername: {
+      type: String,
+      required: true,
+    },
+    avatarUrl: {
+      type: String,
     },
     token: {
       type: String,
-      required: [true, 'Token is required'],
+      required: true,
       unique: true,
       index: true,
     },
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
-    },
-    name: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'Name cannot exceed 100 characters'],
-    },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Indexes for performance
-UserSchema.index({ userId: 1 });
-UserSchema.index({ token: 1 });
-
-const User: Model<IUser> = 
-  mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+const User: Model<IUser> =
+  mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 
 export default User;

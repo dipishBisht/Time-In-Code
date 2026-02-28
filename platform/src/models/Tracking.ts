@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
 
 export interface ITracking extends Document {
-  userId: string;
+  githubId: string;
   date: string;
   totalSeconds: number;
   languages: Map<string, number>;
@@ -13,9 +13,9 @@ export interface ITracking extends Document {
 
 const TrackingSchema = new Schema<ITracking>(
   {
-    userId: {
+    githubId: {
       type: String,
-      required: [true, "User ID is required"],
+      required: [true, "GitHub ID is required"],
       trim: true,
       index: true,
     },
@@ -39,23 +39,22 @@ const TrackingSchema = new Schema<ITracking>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
-// Compound index for userId + date (ensures uniqueness and fast queries)
-TrackingSchema.index({ userId: 1, date: 1 }, { unique: true });
+// Compound index for githubId + date
+TrackingSchema.index({ githubId: 1, date: 1 }, { unique: true });
 
-// Index for sorting by date (newest first)
-TrackingSchema.index({ userId: 1, date: -1 });
+// Index for sorting by date
+TrackingSchema.index({ githubId: 1, date: -1 });
 
-// Virtual for converting to plain object with languages as object (not Map)
+// JSON transformation
 TrackingSchema.set("toJSON", {
   virtuals: true,
   transform: (_doc, ret: any) => {
     if (ret.languages instanceof Map) {
       ret.languages = Object.fromEntries(ret.languages);
     }
-
     delete ret._id;
     delete ret.__v;
     return ret;
@@ -64,17 +63,17 @@ TrackingSchema.set("toJSON", {
 
 // Static method: Merge tracking data
 TrackingSchema.statics.mergeTrackingData = async function (
-  userId: string,
+  githubId: string,
   date: string,
   totalSeconds: number,
-  languages: Record<string, number>,
+  languages: Record<string, number>
 ) {
-  const existing = await this.findOne({ userId, date });
+  const existing = await this.findOne({ githubId, date });
 
   if (existing) {
     // Merge: add new seconds to existing
     const updatedLanguages = new Map<string, number>(
-      existing.languages as Map<string, number>,
+      existing.languages as Map<string, number>
     );
 
     for (const [lang, seconds] of Object.entries(languages)) {
@@ -92,7 +91,7 @@ TrackingSchema.statics.mergeTrackingData = async function (
     const languagesMap = new Map(Object.entries(languages));
 
     return await this.create({
-      userId,
+      githubId,
       date,
       totalSeconds,
       languages: languagesMap,
@@ -117,10 +116,10 @@ TrackingSchema.methods.formatDuration = function (): string {
 // Model with static methods
 interface TrackingModel extends Model<ITracking> {
   mergeTrackingData(
-    userId: string,
+    githubId: string,
     date: string,
     totalSeconds: number,
-    languages: Record<string, number>,
+    languages: Record<string, number>
   ): Promise<ITracking>;
 }
 

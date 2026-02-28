@@ -5,37 +5,29 @@ import User from "@/models/User";
 import { withCors } from "@/lib/cors";
 
 /**
- * GET /api/stats/:userId
+ * GET /api/stats/:githubId
  *
  * Query params:
  *   - startDate (optional): "YYYY-MM-DD"
  *   - endDate (optional): "YYYY-MM-DD"
  *   - limit (optional): number of days (default: 30, max: 365)
- *
- * Returns: {
- *   userId: string,
- *   userName?: string,
- *   data: [
- *     { date: "2026-02-01", totalSeconds: 14400, languages: {...}, formattedDuration: "4h" },
- *     ...
- *   ],
- *   totalSeconds: number,
- *   totalDays: number,
- *   averageSecondsPerDay: number
- * }
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> },
+  { params }: { params: Promise<{ githubId: string }> },
 ) {
   try {
-    const { userId } = await params;
+    const { githubId } = await params;
 
-    // Validate userId
-    if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
+    // Validate githubId
+    if (
+      !githubId ||
+      typeof githubId !== "string" ||
+      githubId.trim().length === 0
+    ) {
       return withCors(
         NextResponse.json(
-          { error: "Invalid userId parameter" },
+          { error: "Invalid githubId parameter" },
           { status: 400 },
         ),
       );
@@ -87,14 +79,15 @@ export async function GET(
     // Connect to database
     await connectToDatabase();
 
-    // Check if user exists
-    const user = await User.findOne({ userId }).select("name email");
+    // Check if user exists by githubId
+    const user = await User.findOne({ githubId }).select(
+      "githubUsername avatarUrl",
+    );
 
     if (!user) {
-      // User doesn't exist yet (hasn't synced any data)
       return withCors(
         NextResponse.json({
-          userId,
+          githubId,
           data: [],
           totalSeconds: 0,
           totalDays: 0,
@@ -105,7 +98,7 @@ export async function GET(
     }
 
     // Build Mongoose query
-    const query: any = { userId };
+    const query: any = { githubId };
 
     if (startDate || endDate) {
       query.date = {};
@@ -113,7 +106,7 @@ export async function GET(
       if (endDate) query.date.$lte = endDate;
     }
 
-    //  Fetch tracking data
+    // Fetch tracking data
     const trackingDocs = await Tracking.find(query)
       .sort({ date: -1 })
       .limit(limit)
@@ -139,8 +132,9 @@ export async function GET(
 
     return withCors(
       NextResponse.json({
-        userId,
-        userName: user.name,
+        githubId,
+        userName: user.githubUsername,
+        avatarUrl: user.avatarUrl,
         data,
         totalSeconds,
         totalDays,
@@ -149,7 +143,7 @@ export async function GET(
       }),
     );
   } catch (error) {
-    console.error("[API]  Stats endpoint error:", error);
+    console.error("[API]: Stats endpoint error:", error);
     return withCors(
       NextResponse.json({ error: "Internal server error" }, { status: 500 }),
     );
@@ -157,7 +151,6 @@ export async function GET(
 }
 
 // Helper Functions
-
 function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
