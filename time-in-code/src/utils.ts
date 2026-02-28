@@ -1,21 +1,12 @@
 import * as vscode from "vscode";
-import { v4 as uuidv4 } from "uuid";
 
 /**
- * Get or create a unique user ID
+ * Get GitHub ID from stored state
  */
-export async function getUserId(context: vscode.ExtensionContext): Promise<string> {
-  const KEY = 'coding_time_tracker_user_id';
-
-  const existing = context.globalState.get<string>(KEY);
-  if (existing) {
-    return existing;
-  }
-
-  const newId = uuidv4();
-  await context.globalState.update(KEY, newId);
-  console.log('[Utils] Generated new user ID:', newId);
-  return newId;
+export async function getGitHubId(
+  context: vscode.ExtensionContext,
+): Promise<string | null> {
+  return context.globalState.get<string>("github_id") || null;
 }
 
 /**

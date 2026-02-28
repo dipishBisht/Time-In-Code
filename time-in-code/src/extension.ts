@@ -1,70 +1,103 @@
 import * as vscode from "vscode";
-import { API_ENDPOINT, ApiClient } from "./api-client";
+import { ApiClient, API_ENDPOINT } from "./api-client";
 import { Tracker } from "./tracker";
-import { getUserId } from "./utils";
+import { getGitHubId } from "./utils";
 
-/**
- * MODULE-LEVEL STATE
- * These live for the entire lifetime of the extension.
- */
 let apiClient: ApiClient;
 let tracker: Tracker | null = null;
 let extensionContext: vscode.ExtensionContext;
+const BASE_URL = API_ENDPOINT.replace("/api", "");
 
-/**
- * ACTIVATION
- */
 export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   extensionContext = context;
   console.log("[CodingTime] Activating...");
 
-  // ── 1. Firebase setup ───────────
+  // Initialize API client
   apiClient = new ApiClient(context);
+
   const alreadyConfigured = await apiClient.isConfigured();
 
   if (!alreadyConfigured) {
+    // First run - prompt user to log in
     const choice = await vscode.window.showInformationMessage(
-      "Coding Time Tracker will generate a secure token to sync your data.",
-      "Generate Token",
+      "Welcome to Time in Code! Log in with GitHub to start tracking.",
+      "Log in with GitHub",
       "Later",
     );
 
-    if (choice === "Generate Token") {
-      await runConfigureFlow();
+    if (choice === "Log in with GitHub") {
+      vscode.commands.executeCommand("timeInCode.login");
     } else {
       vscode.window.showWarningMessage(
-        "Tracking is paused until configured. " +
-          'Run "Coding Time: Configure API" from the Command Palette when ready.',
+        'Tracking is paused. Run "Time in Code: Log in with GitHub" when ready.',
       );
     }
   } else {
-    await apiClient.initialize();
+    // Already configured - check if we have githubId
+    const githubId = await getGitHubId(context);
+
+    if (githubId) {
+      await apiClient.initialize();
+      await startTracker();
+    } else {
+      vscode.window
+        .showInformationMessage(
+          "Please log in again to complete setup.",
+          "Log in",
+        )
+        .then((selection) => {
+          if (selection === "Log in") {
+            vscode.commands.executeCommand("timeInCode.login");
+          }
+        });
+    }
   }
 
-  // ── 2. Start the tracker, if configured ──
-  const ready = await apiClient.initialize();
-
-  if (ready) {
-    await startTracker();
-  } else {
-    vscode.window.showInformationMessage(
-      'Coding Time is not configured yet. Run "Coding Time: Configure API" to start tracking.',
-    );
-  }
-
-  // ── 3: Register Commands ─────────────
+  // URI handler for GitHub OAuth callback
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "coding-time-tracker.configure",
-      runConfigureFlow,
-    ),
-    vscode.commands.registerCommand("coding-time-tracker.showStats", showStats),
-    vscode.commands.registerCommand("coding-time-tracker.showToken", showToken),
+    vscode.window.registerUriHandler({
+      async handleUri(uri: vscode.Uri) {
+        const params = new URLSearchParams(uri.query);
+        const token = params.get("token");
+        const githubId = params.get("githubId");
+
+        if (token && githubId) {
+          await context.secrets.store("coding_time_tracker_user_token", token);
+          await context.globalState.update("github_id", githubId);
+
+          vscode.window.showInformationMessage(
+            "Successfully logged in with GitHub!",
+          );
+
+          // Start tracking immediately
+          await apiClient.initialize();
+          await startTracker();
+        }
+      },
+    }),
   );
 
-  // ── 4: Register cleanup ──────────────
+  // Register Commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand("timeInCode.login", async () => {
+      await vscode.env.openExternal(
+        vscode.Uri.parse(`${BASE_URL}/api/auth/github`),
+      );
+    }),
+
+    vscode.commands.registerCommand("coding-time-tracker.showStats", showStats),
+
+    vscode.commands.registerCommand("coding-time-tracker.logout", logout),
+
+    vscode.commands.registerCommand(
+      "coding-time-tracker.showInfo",
+      showUserInfo,
+    ),
+  );
+
+  // Register cleanup
   context.subscriptions.push({
     dispose: async () => {
       if (tracker) {
@@ -75,118 +108,81 @@ export async function activate(
     },
   });
 
-  console.log("[CodingTime] Activated.");
+  console.log("[CodingTime]: Activated.");
 }
 
-/**
- * DEACTIVATION
- */
 export function deactivate() {
-  console.log("[CodingTime] Extension deactivated.");
-  // Cleanup is handled by the disposable registered above
-  // This export exists because VS Code requires it.
+  console.log("[CodingTime]: Extension deactivated.");
 }
 
-// INTERNAL FUNCTIONS
+// Internal Functions
 
-/**
- * Create and start a Tracker.
- */
 async function startTracker(): Promise<void> {
-  const userId = await getUserId(extensionContext);
-  tracker = new Tracker(apiClient, userId);
-  tracker.start();
-  console.log("[CodingTime] Tracker is running.");
-}
+  const githubId = await getGitHubId(extensionContext);
 
-/**
- * Command handler: "Coding Time: Configure API"
- */
-async function runConfigureFlow(): Promise<void> {
-  const choice = await vscode.window.showInformationMessage(
-    "Do you already have a token from the website, or should we generate one?",
-    "Generate New Token",
-    "I Have a Token",
-  );
-
-  let token: string | undefined;
-
-  if (choice === "I Have a Token") {
-    token = await vscode.window.showInputBox({
-      prompt: "Paste your token from the website",
-      placeHolder: "abc123...",
-      password: true,
-      ignoreFocusOut: true,
-      validateInput: (value) => {
-        if (value.length < 16) {
-          return "Token seems too short. Make sure you copied the entire thing.";
+  if (!githubId) {
+    vscode.window
+      .showWarningMessage(
+        "Please log in with GitHub to start tracking.",
+        "Log in",
+      )
+      .then((selection) => {
+        if (selection === "Log in") {
+          vscode.commands.executeCommand("timeInCode.login");
         }
-        return null;
-      },
-    });
-
-    if (!token) {
-      return;
-    }
-  }
-
-  const success = await apiClient.configure(token);
-
-  if (success) {
-    vscode.window.showInformationMessage("API configured successfully.");
-
-    const userToken = await apiClient.getUserToken();
-    if (userToken && !choice) {
-      // Only show if we generated it (not if they pasted their own)
-      vscode.window.showInformationMessage(
-        `Your token: ${userToken}\n\n` +
-          'Save this somewhere safe. You can view it anytime with "Coding Time: Show Token".',
-      );
-    }
-
-    // Start tracker if not already running
-    if (!tracker) {
-      await startTracker();
-    }
-  } else {
-    vscode.window.showErrorMessage(
-      "Configuration failed. Check the Debug Console for details.",
-    );
-  }
-}
-
-/**
- * Command handler: "Coding Time: Show Today's Stats"
- */
-async function showStats(): Promise<void> {
-  if (!tracker) {
-    vscode.window.showWarningMessage(
-      "Tracker is not running. Configure the API first.",
-    );
+      });
     return;
   }
 
-  const userId = await getUserId(extensionContext);
-  const statsUrl = `${API_ENDPOINT.slice(0, -4)}/dashboard/${userId}`;
+  // No longer passes githubId to tracker
+  tracker = new Tracker(apiClient);
+  tracker.start();
+  console.log("[CodingTime]: Tracker is running.");
+}
+
+async function showStats(): Promise<void> {
+  if (!tracker) {
+    vscode.window.showWarningMessage("Tracker is not running. Log in first.");
+    return;
+  }
+
+  const githubId = await getGitHubId(extensionContext);
+
+  if (!githubId) {
+    vscode.window.showWarningMessage("Please log in with GitHub first.");
+    return;
+  }
+
+  // Use githubId in URL
+  const statsUrl = `${API_ENDPOINT.slice(0, -4)}/dashboard/${githubId}`;
   vscode.window.showInformationMessage("Opening your coding dashboard...");
   vscode.env.openExternal(vscode.Uri.parse(statsUrl));
 }
 
-/**
- * Command handler: "Coding Time: Show Token"
- */
-async function showToken(): Promise<void> {
+async function logout(): Promise<void> {
+  await extensionContext.secrets.delete("coding_time_tracker_user_token");
+  await extensionContext.globalState.update("github_id", undefined);
+
+  if (tracker) {
+    await tracker.stop();
+    tracker = null;
+  }
+
+  vscode.window.showInformationMessage("Logged out successfully.");
+}
+
+async function showUserInfo(): Promise<void> {
+  const githubId = await getGitHubId(extensionContext);
   const token = await apiClient.getUserToken();
 
-  if (!token) {
+  if (!githubId || !token) {
     vscode.window.showWarningMessage(
-      'No token found. Run "Configure API" first.',
+      'Not logged in. Run "Log in with GitHub".',
     );
     return;
   }
 
   vscode.window.showInformationMessage(
-    `Your token:\n${token}\n\n` +
-      "Use this token on the website to view your stats.",
+    `GitHub ID: ${githubId}\nToken: ${token.substring(0, 12)}...`,
   );
 }
