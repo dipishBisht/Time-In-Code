@@ -11,7 +11,6 @@ if (!GITHUB_CLIENT_SECRET) {
 
 // Base URL for OAuth callbacks
 export const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL ||
-  (process.env.APP_URL ? process.env.APP_URL : "http://localhost:3000");
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 console.log("[ENV] ✅ BASE_URL:", BASE_URL);
