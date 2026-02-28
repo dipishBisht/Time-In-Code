@@ -13,17 +13,16 @@ A VS Code extension that automatically tracks how long you code each day and syn
 
 ### Step 2: Generate Your Token
   1. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
-  2. Type: **"Coding Time: Configure API"**
-  3. Click **"Generate New Token"**
+  2. Type: **"Time in Code: Login with Github"**
+  3. Authorize
 
 ### Step 3: Start Coding
 Open any file and type. That's it! The extension tracks automatically.
 
 **View your stats:**
 1. Press `Ctrl+Shift+P` again
-2. Type: **"Coding Time: Show Today's Stats"**
-3. Copy your User ID from the message
-4. Visit: `https://time-in-code.vercel.app/dashboard/YOUR_USER_ID`
+2. Type: **"Coding Time: Show Dashboard"**
+3. Click: Open
 
 **Need help?** → [Troubleshooting](#troubleshooting) | [Full Documentation](https://your-api.vercel.app/docs)
 
@@ -74,9 +73,8 @@ code --install-extension ./time-in-code-0.1.0.vsix
 
 1. Open VS Code
 2. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
-3. Type: **"Coding Time: Configure API"**
-4. Click **"Generate New Token"**
-5. Save your token somewhere safe (you'll need it to view stats)
+3. Type: **"Time in Code: Login with Github"**
+4. Authorize
 
 **That's it!** The extension will now track your coding time automatically.
 
@@ -88,9 +86,9 @@ Access these via Command Palette (`Ctrl+Shift+P`):
 
 | Command | What It Does |
 |---|---|
-| **Coding Time: Configure API** | Generate or update your authentication token |
-| **Coding Time: Show Today's Stats** | Display your user ID and link to view stats |
-| **Coding Time: Show Token** | Retrieve your token if you lost it |
+| **Time in Code: Login with Github** | Automatically login with you github account |
+| **Time in Code: Show Account Info** | Display your account details |
+| **Time in Code: Show Dashboard** | Retrieve your data in formatted way in the dashboard |
 
 ---
 

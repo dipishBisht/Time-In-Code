@@ -20,17 +20,68 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
+# Time in Code API
 
-To learn more about Next.js, take a look at the following resources:
+Backend API for **Time in Code** — a VS Code extension that tracks coding time and syncs statistics securely using GitHub OAuth.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Built with:
+- Next.js (App Router)
+- MongoDB Atlas
+- GitHub OAuth
+- Deployed on Vercel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+# Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- GitHub OAuth authentication
+- Secure token-based API
+- Coding time aggregation
+- Language breakdown tracking
+- Dashboard analytics endpoint
+- Public stats endpoint
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+# Authentication Flow
+
+1. Extension redirects user to GitHub OAuth
+2. GitHub returns authorization code
+3. Backend exchanges code for access token
+4. Backend retrieves:
+   - GitHub ID
+   - Username
+   - Avatar
+5. Backend generates secure internal token
+6. Extension stores token securely
+7. All API requests use:
+
+Authorization: Bearer YOUR_TOKEN
+
+No JWT required.
+No Firebase.
+No third-party auth services.
+
+---
+
+# API Routes
+
+## POST /api/track
+
+Tracks coding time.
+
+Headers:
+
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+Body:
+
+```json
+{
+  "date": "2026-02-28",
+  "totalSeconds": 600,
+  "languages": {
+    "typescript": 600
+  }
+}

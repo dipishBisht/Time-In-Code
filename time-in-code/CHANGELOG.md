@@ -16,3 +16,23 @@ All notable changes to this extension will be documented here.
 - Midnight rollover handling — coding past midnight correctly splits time into the right calendar day
 - `Coding Time: Configure Firebase` command to (re)configure credentials at any time
 - `Coding Time: Show Today's Stats` command that displays your user ID and the Firestore path to today's document
+
+
+## [1.0.0] - 2026-02-28
+
+### Added
+- GitHub OAuth authentication
+- Secure token-based auth system
+- Account info command
+- Dashboard endpoint
+
+### Changed
+- Removed manual token system
+- Removed UUID-based userId
+- Improved sync logic
+- Updated documentation
+
+### Fixed
+- Duplicate user issues
+- Broken authentication flow
+- Token mismatch errors

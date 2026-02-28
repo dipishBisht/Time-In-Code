@@ -7,13 +7,13 @@ export default function QuickStart() {
     <div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-          ~5 min
+          ~2 min
         </span>
         Quick Start Guide
       </div>
 
       <h1>Quick Start</h1>
-      <p>Get from zero to tracking in 5 minutes. No account needed.</p>
+      <p>Get from zero to tracking in 2 minutes. GitHub account required.</p>
 
       {/* Step 1 */}
       <div className="flex gap-4 mt-10">
@@ -21,13 +21,21 @@ export default function QuickStart() {
         <div className="flex-1">
           <h2 className="mt-0">Install the Extension</h2>
           <p>
-            Download the <code>.vsix</code> file and install it via terminal:
+            Download the <code>.vsix</code> file from{" "}
+            <a
+              href="https://github.com/dipishBisht/Time-In-Code/releases"
+              className="text-primary hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub Releases
+            </a>
+            , then install via terminal:
           </p>
           <CodeBlock
             language="bash"
             title="Terminal"
-            code={`# Download from releases page, then:
-code --install-extension coding-time-tracker-0.1.0.vsix`}
+            code={`code --install-extension time-in-code-0.2.0.vsix`}
           />
           <p>Restart VS Code after installation.</p>
           <div className="flex items-center gap-2 text-sm text-primary mt-2">
@@ -41,23 +49,30 @@ code --install-extension coding-time-tracker-0.1.0.vsix`}
       <div className="flex gap-4 mt-10">
         <div className="step-number">2</div>
         <div className="flex-1">
-          <h2 className="mt-0">Generate Your Token</h2>
+          <h2 className="mt-0">Log in with GitHub</h2>
           <ol>
             <li>
               Press <code>Ctrl+Shift+P</code> (Windows/Linux) or{" "}
               <code>Cmd+Shift+P</code> (Mac)
             </li>
             <li>
-              Type: <strong>&quot;Coding Time: Configure API&quot;</strong>
+              Type:{" "}
+              <strong>&quot;Time in Code: Log in with GitHub&quot;</strong>
             </li>
-            <li>
-              Click <strong>&quot;Generate New Token&quot;</strong>
-            </li>
-            <li>Copy your token and save it somewhere safe</li>
+            <li>Your browser will open to GitHub OAuth</li>
+            <li>Click &quot;Authorize&quot;</li>
+            <li>You&apos;ll be redirected back to VS Code automatically</li>
           </ol>
+          <div className="mt-4 p-4 rounded-lg border bg-primary/5">
+            <p className="text-sm font-medium mb-2">🔐 What We Access</p>
+            <p className="text-sm text-muted-foreground">
+              We only request <code>read:user</code> scope: your GitHub ID,
+              username, and avatar. We cannot access your code or repositories.
+            </p>
+          </div>
           <div className="flex items-center gap-2 text-sm text-primary mt-2">
             <Check className="h-4 w-4" />
-            <span>Token generated</span>
+            <span>Logged in with GitHub</span>
           </div>
         </div>
       </div>
@@ -88,22 +103,19 @@ code --install-extension coding-time-tracker-0.1.0.vsix`}
               Press <code>Ctrl+Shift+P</code> again
             </li>
             <li>
-              Type:{" "}
-              <strong>&quot;Coding Time: Show Today&apos;s Stats&quot;</strong>
+              Type: <strong>&quot;Time in Code: Show Dashboard&quot;</strong>
             </li>
-            <li>Copy your User ID</li>
-            <li>
-              Visit your{" "}
-              <Link href="/dashboard/YOUR_USER_ID" className="text-primary underline">
-                dashboard
-              </Link>
-            </li>
+            <li>Your browser opens with your personalized dashboard</li>
           </ol>
           <CodeBlock
             language="text"
-            title="Dashboard URL"
-            code="https://time-in-code.vercel.app/dashboard/YOUR_USER_ID"
+            title="Dashboard URL Format"
+            code="https://time-in-code.vercel.app/dashboard/YOUR_GITHUB_ID"
           />
+          <p>
+            Your dashboard URL uses your GitHub ID (not username). Bookmark it
+            for quick access!
+          </p>
         </div>
       </div>
 
@@ -120,7 +132,10 @@ code --install-extension coding-time-tracker-0.1.0.vsix`}
             </Link>
           </li>
           <li>
-            <Link href="/docs/embedding" className="text-primary hover:underline">
+            <Link
+              href="/docs/embedding"
+              className="text-primary hover:underline"
+            >
               Embed stats in your portfolio
             </Link>
           </li>

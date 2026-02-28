@@ -44,17 +44,16 @@ Automatically track your daily coding time in VS Code and can sync it to a centr
 
 ### Step 2: Generate Your Token
   1. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
-  2. Type: **"Coding Time: Configure API"**
-  3. Click **"Generate New Token"**
+  2. Type: **"Time in Code: Login with Github"**
+  3. Authorize
 
 ### Step 3: Start Coding
 Open any file and type. That's it! The extension tracks automatically.
 
 **View your stats:**
 1. Press `Ctrl+Shift+P` again
-2. Type: **"Coding Time: Show Today's Stats"**
-3. Copy your User ID from the message
-4. Visit: `https://time-in-code.vercel.app/dashboard/YOUR_USER_ID`
+2. Type: **"Time in Code: Show Dashboard"**
+4. Click: Open
 
 **Need help?** → [Troubleshooting](#troubleshooting) | [Full Documentation](https://your-api.vercel.app/docs)
 
@@ -131,17 +130,16 @@ code --install-extension ./time-in-code-0.1.0.vsix
 ### 3. Configure the Extension
 
 1. Open VS Code
-2. Press `Ctrl+Shift+P` → "Coding Time: Configure API"
-3. Click "Generate New Token"
-4. Copy your token (you'll need it to view stats)
+2. Press `Ctrl+Shift+P` → "Time in Code: Login with Github"
+3. Authorize
 
 ---
 
 ### 4. View Your Stats
 
-Go to: `https://time-in-code.vercel.app/api/stats/YOUR_USER_ID`
+Go to: `https://time-in-code.vercel.app/api/stats/GITHUB_ID`
 
-Get your user ID from: `Ctrl+Shift+P` → "Coding Time: Show Today's Stats"
+Get your user ID from: `Ctrl+Shift+P` → "Coding Time: Show Account's Info"
 
 ---
 
@@ -157,9 +155,9 @@ Get your user ID from: `Ctrl+Shift+P` → "Coding Time: Show Today's Stats"
 
 | Command | What It Does |
 |---|---|
-| **Coding Time: Configure API** | Set up your token (first run) |
-| **Coding Time: Show Today's Stats** | See your user ID and stats link |
-| **Coding Time: Show Token** | Retrieve your token if you lost it |
+| **Coding Time: Login with Github** | Set up your token (first run) |
+| **Coding Time: Show Dashboard** | See your user ID and stats link |
+| **Coding Time: Show Account Info** | Retrieve your details if you lost it |
 
 ### How It Tracks
 
@@ -185,7 +183,7 @@ export default function CodingStats() {
   const [stats, setStats] = useState(null);
   
   useEffect(() => {
-    fetch('https://time-in-code.vercel.app/api/stats/YOUR_USER_ID?limit=30')
+    fetch('https://time-in-code.vercel.app/api/stats/GITHUB_ID?limit=30')
       .then(res => res.json())
       .then(data => setStats(data));
   }, []);
@@ -207,7 +205,7 @@ export default function CodingStats() {
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/api/track` | POST | Extension writes data here (requires token) |
-| `/api/stats/:userId` | GET | Public endpoint to fetch stats |
+| `/api/stats/:githubId` | GET | Public endpoint to fetch stats |
 | `/docs` | GET | Documentation site |
 
 **📖 Full API documentation:** See [`platform/README.md`](./platform/README.md)
@@ -258,9 +256,9 @@ Portfolio → Your API (public endpoint)
 - Vercel (deployment)
 
 ### Database Schema
-- **Users** collection: `{ userId, token, name?, email? }`
-- **Tracking** collection: `{ userId, date, totalSeconds, languages }`
-- Indexes on `userId + date` for fast queries
+- **Users** collection: `{ githubId, githubUsername, avatarUrl, token }`
+- **Tracking** collection: `{ githubId, date, totalSeconds, languages }`
+- Indexes on `githubId + date` for fast queries
 
 ---
 
